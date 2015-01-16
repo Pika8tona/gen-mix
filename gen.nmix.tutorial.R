@@ -100,8 +100,8 @@ model.null$conv
 # check the stability of the MLEs by calculating the condition number, the ratio of the largest 
 # to the smallest eigenvalues of the hessian matrix (<=0 is bad--maybe overfitted)
   
-ev.null = eigen(model.null$hessian)$values
-cn.null = max(ev.null)/min(ev.null)
+ev.null = eigen(model.null$hessian)$values; ev.null
+cn.null = max(ev.null)/min(ev.null); cn.null
 
 # get the MLEs
 
@@ -115,15 +115,15 @@ c(lambda.est, p.est)
 
 # find the asymptotic standard errors of the param ests by solving the Hessian matrix
   
-se = sqrt(diag(solve(model.null$hess)))
+se = sqrt(diag(solve(model.null$hess))); se
 
 # get the min value of the negative log likelihood (optim() is minimizing the negative loglike)
 
-nll = model.null$val
+nll = model.null$val; nll
 
 # calculate the AIC score
   
-aic = nll + 2*length(model.null$par)
+aic = nll + 2*length(model.null$par); aic
 
 # fit the N-mixture model with covariates for lambda and p, starting at the MLEs from the null
 # model and inserting "0"s in the start vec for the number of covars in the X and Z matrices
@@ -133,8 +133,8 @@ model.closed = optim(c(model.null$par[1],0,0,model.null$par[2],0,model.null$par[
                           migration="none", prior="NB",Date=DATE.3,K=K.lim)
 
 model.closed$conv
-ev.closed = eigen(model.closed$hessian)$values
-cn.closed = max(ev.closed)/min(ev.closed)
+ev.closed = eigen(model.closed$hessian)$values; ev.closed
+cn.closed = max(ev.closed)/min(ev.closed); cn.closed
 
 
 # fit the generalized model, starting at the MLEs from the closed model
@@ -144,8 +144,8 @@ model.open = optim(c(model.closed$par[1:5],-2,2,model.closed$par[6]), nmix.mig,
                         prior="NB", Date=DATE.3, K=K.lim)
 
 model.open$conv
-ev.open = eigen(model.open$hessian)$values
-cn.open = max(ev.open)/min(ev.open)
+ev.open = eigen(model.open$hessian)$values; ev.open
+cn.open = max(ev.open)/min(ev.open); cn.open
 
 
 # obtain the p-value from the closure test
@@ -158,6 +158,7 @@ prop.0 = 0.5-prop
 prop.1 = 0.5
 prop.2 = prop
 p.value = prop.0*(0) + prop.1*(1-pchisq(t.stat,1)) + prop.2*(1-pchisq(t.stat,2))
+p.value
 
 # obtain abundance ests and asymptotic SEs for every primary period and model, plus 
 # 95% CIs for pop dyn params; supply number of primary periods "T"
@@ -166,6 +167,7 @@ ests.closed = ests(model.closed$par,model.closed$hess, migration="none", n=n.it,
                         X=X.lam, Z=Z.p, T=3, prior="NB")
 ests.open = ests(model.open$par, model.open$hess, migration="constant", n=n.it, 
                         X=X.lam, Z=Z.p, T=3, prior="NB")
+cbind(ests.closed,ests.open)
 
 # the first T values are the estimated total abundance, and the next T values are the 
 #asymptotic standard errors associated with each estimate, respectively
@@ -177,12 +179,14 @@ ests.open = ests(model.open$par, model.open$hess, migration="constant", n=n.it,
 
 gamma = ests.open[9]
 omega = ests.open[10]
+c(gamma,omega)
 
 # obtain asymptotic SEs of the dynamic parameter estimates (before back-transformation)
 
 se = sqrt(diag(solve(model.open$hess)))
 se.gamma = se[6]
 se.omega = se[7]
+c(se.gamma,se.omega)
 
 # compute asymptotic 95% confidence intervals for gamma and omega
 
@@ -190,3 +194,4 @@ gamma.ci = exp( c( model.open$par[6]- 1.96*se.gamma , model.open$par[6] +
 1.96*se.gamma))
 omega.ci = expit( c( model.open$par[7] - 1.96*se.omega, model.open$par[7] +
 1.96*se.omega))
+rbind(gamma.ci,omega.ci)
