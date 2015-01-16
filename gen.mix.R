@@ -1,5 +1,7 @@
 ## gen.mix.R
 
+# Dail and Madsen 2011, Biometrics 
+
 # contains "nmix.mig", "ests", and "Mallard.data"
 # nmix.mig is a function that returns the negative log likelihood for the generalized model
 # ests is a function to return estimates of total abundance during each primary period
@@ -10,7 +12,10 @@ nmix.mig = function(vars,n,X,Z,migration="none",prior="poisson",Date=matrix(rep(
   # function returns the negative log likelihood of the generalized N-mixture model. 
   # David Dail, revised March 2, 2010
   #
-  # migration is one these: "none", "constant", "autoreg", "trend1","reshuf".
+  # w is survival probability, r is Poisson entering migration rate (assumed independent here)
+  # Note that covariates for the migration parameters (r,w) are not accommodated in this program code.
+  # 
+  # migration is one of these: "none", "constant", "autoreg", "trend1", "reshuf"
   # migration="none" assigns r=0, w=1, so G~Pois(0) [ie, P(G=0)=1 ] and S~Binom(Nit-1,1) [ie, P(S=Nit-1) = 1 ];
   # migration="constant" has G~Pois(e^r0);
   # migration="autoreg" has G~Pois(e^r0*N.it-1).
@@ -24,13 +29,10 @@ nmix.mig = function(vars,n,X,Z,migration="none",prior="poisson",Date=matrix(rep(
   #
   # prior is either "poisson" or "NB".
   # 
-  # w is survival probability, r is Poisson entering migration rate (assumed independent here)
-  # Note that covariates for the migration parameters (r,w) are not accommodated in this program code.
-  # 
   # vars is B0, B1,... Bk for each of: log(lambda.i), logit(p.it); then log(r0),logit(w) if migration != "none"; then log(dispersion).
   #
   # n is the matrix of number observed: sites are rows, and successive sampling occasions go across the columns,
-  #  with NA (missing) entered at the end of row if less samples are obtained for that site (row) than the
+  # with NA (missing) entered at the end of row if less samples are obtained for that site (row) than the
   # maximum obtained for any site.
   #
   # Date is a matrix of the sampling dates (positive integers); it is best to have the first sampling occasion to be 1,
@@ -40,15 +42,15 @@ nmix.mig = function(vars,n,X,Z,migration="none",prior="poisson",Date=matrix(rep(
   # It is good practice to choose a value that is "high enough" so that increasing K does not change the resulting likelihood.
   # (Higher K's will take more computing power & time).
   
-  n.it= n
+  n.it = n
   R = length(n[,1])
-  nsite=R
+  nsite = R
   #T.i is the number of sampling occasions per site
   T.i = numeric(R)
   for(i in 1:R){
     T.i[i] = sum( !is.na(n.it[i,]))
   }
-  T=max(T.i)
+  T = max(T.i)
   #Delta.it is the time difference (no. of primary periods) between sampling occasions - could be 0
   Delta.it = matrix(0, nrow=R, ncol=(T-1))
   for(i in 1:R){
@@ -57,7 +59,7 @@ nmix.mig = function(vars,n,X,Z,migration="none",prior="poisson",Date=matrix(rep(
     }
   }
   
-  J.it= matrix(1,nrow=R,ncol=T)
+  J.it = matrix(1,nrow=R,ncol=T)
   for(i in 1:R){
     for(t in 1:T){
       if(!is.finite(n.it[i,t])) J.it[i,t]=0
@@ -65,8 +67,8 @@ nmix.mig = function(vars,n,X,Z,migration="none",prior="poisson",Date=matrix(rep(
   }
   
   T = max(T.i)
-  X.lam.i=as.matrix(X)  # in null case this is a 1xR vector of ones
-  X.theta.it=as.matrix(Z) # in null case this is a 1xRT vector of ones
+  X.lam.i = as.matrix(X)  # in null case this is a 1xR vector of ones
+  X.theta.it = as.matrix(Z) # in null case this is a 1xRT vector of ones
   
   # obtain the parameter values for each site & sampling occasion
   
@@ -105,7 +107,6 @@ nmix.mig = function(vars,n,X,Z,migration="none",prior="poisson",Date=matrix(rep(
     r1 = 0 # allows G.it ~ Pois(e^r0 * N.it-1)
     r.it = lam.i[1] # requires no covariates for lambda
   }
-  
   if(migration == "none"){
     r0 = 0
     w = 1
@@ -126,7 +127,7 @@ nmix.mig = function(vars,n,X,Z,migration="none",prior="poisson",Date=matrix(rep(
   Pt.Agoal2 = matrix((Pois.mat*Bin.mat)%*%rep(1,(K+1)),nrow=(K+1),ncol=(K+1),byrow=FALSE)
   Pt.A2.array = array(0,dim=c(1+max(na.omit(Delta.it)),(K+1),(K+1)))
   Pt.A2 = diag((K+1))
-  Pt.A2.array[1,,]=Pt.A2
+  Pt.A2.array[1,,] = Pt.A2
   # using the Chapman-Kolmogorov equations:
   max.delta = max(max(na.omit(Delta.it)),max(na.omit(Date[,1]-1)))
   for(i in 2:(1+max.delta)){
@@ -175,7 +176,7 @@ nmix.mig = function(vars,n,X,Z,migration="none",prior="poisson",Date=matrix(rep(
       #######
       # part B
       
-      B.goal=A.goal
+      B.goal = A.goal
       
       hold.j = 1
       if(T>2) {
@@ -201,13 +202,12 @@ nmix.mig = function(vars,n,X,Z,migration="none",prior="poisson",Date=matrix(rep(
         }
       }
       
-      
       ####
       # part C
       
       Bin.first = rep(c(n.t[(1:(T-hold.j))]), each=(K+1))
       Bin.index = rep(K.num,J.t[1])
-      B=matrix(dbinom(Bin.first,Bin.index,p.t[1],log=FALSE),nrow=(K+1),ncol=(J.t[T]),byrow=FALSE)
+      B = matrix(dbinom(Bin.first,Bin.index,p.t[1],log=FALSE),nrow=(K+1),ncol=(J.t[T]),byrow=FALSE)
       g1.T = apply(B,1,prod)
       
       # now we have g_{2}
@@ -248,7 +248,7 @@ nmix.mig = function(vars,n,X,Z,migration="none",prior="poisson",Date=matrix(rep(
 }
 
 
-ests = function(maxlikes,input.hess,migration="none", n, X, Z, T=length(n.it[1,]), prior="poisson"){
+ests = function(maxlikes, input.hess, migration="none", n, X, Z, T=length(n.it[1,]), prior="poisson"){
   #David Dail, revised March 2, 2010
   #
   #function to calculate the estimated values of N.t's (total abundances) for every sampling period
@@ -263,16 +263,16 @@ ests = function(maxlikes,input.hess,migration="none", n, X, Z, T=length(n.it[1,]
   #
   #T is the number of primary sampling occasions
   #X and Z are the covariate matrices for lambda.i and p.it, respectively (constructed the same way
-  # as in nmix.mig()
+  #as in nmix.mig()
   #
   #prior="poisson" or "NB" (for negative binomial)
   
-  X=as.matrix(X)
-  Z=as.matrix(Z)
+  X = as.matrix(X)
+  Z = as.matrix(Z)
   betas = length(X[1,])
   phis = length(Z[1,])
-  n.it=n
-  R=length(n.it[,1])
+  n.it = n
+  R = length(n.it[,1])
   lam.i = exp(X%*%maxlikes[1:length(X[1,])])
   p.it.vec = expit(Z%*%maxlikes[(1+length(X[1,])):(length(X[1,])+length(Z[1,]))])
   p.it = matrix(p.it.vec,nrow=R,ncol=length(n.it[1,]),byrow=TRUE)
@@ -298,8 +298,7 @@ ests = function(maxlikes,input.hess,migration="none", n, X, Z, T=length(n.it[1,]
     if(betas>2) {
       partial.f3.i = numeric(R)
       for (i in 1:R) {
-        partial.f3.i[i] = X[i,3] * exp(X[i,]%*%maxlikes[1:betas])
-        
+        partial.f3.i[i] = X[i,3] * exp(X[i,]%*%maxlikes[1:betas])  
       }
       partial.f3 = sum(partial.f3.i)
       partial.f = c(partial.f, partial.f3)
@@ -308,15 +307,12 @@ ests = function(maxlikes,input.hess,migration="none", n, X, Z, T=length(n.it[1,]
     while(k.b<=betas) {
       partial.f3.i = numeric(R)
       for (i in 1:R) {
-        partial.f3.i[i] = X[i,k.b] * exp(X[i,]%*%maxlikes[1:betas])
-        
+        partial.f3.i[i] = X[i,k.b] * exp(X[i,]%*%maxlikes[1:betas])   
       }
       partial.f3 = sum(partial.f3.i)
       partial.f = c(partial.f, partial.f3)
       k.b=k.b+1
     }
-    
-    
     
     var.Nhat = t(partial.f)%*%inv.hess%*%(partial.f)
     
@@ -325,22 +321,22 @@ ests = function(maxlikes,input.hess,migration="none", n, X, Z, T=length(n.it[1,]
     se.Nt = sqrt(abs(var.Nhat))
     N.ave = N.hat
     var.Nave = var.Nhat/T
-    sd.Nave=sqrt(abs(var.Nave))
+    sd.Nave = sqrt(abs(var.Nave))
     
-    trend=0
+    trend = 0
     var.trend = NA
-    sd.trend=NA
+    sd.trend = NA
     N.t = rep(Nt, T)
     seN.t = rep(se.Nt,T)
   }
   
   if(migration!="none") {  #if there is migration...
     Beta = maxlikes[1:betas]
-    inv.hess=solve(input.hess)[c(1:betas,(betas+phis+1),(betas+phis+2)),c(1:betas,(betas+phis+1),(betas+phis+2))]
+    inv.hess = solve(input.hess)[c(1:betas,(betas+phis+1),(betas+phis+2)),c(1:betas,(betas+phis+1),(betas+phis+2))]
     
-    w=expit(maxlikes[betas+phis+2])
-    r=exp(maxlikes[betas+phis+1])
-    lambda=lam.i
+    w = expit(maxlikes[betas+phis+2])
+    r = exp(maxlikes[betas+phis+1])
+    lambda = lam.i
     par.ests = c(mean(lambda),ave.pit,r,w)
     ##hess and f.t need to be in this order: B0, B1, B2, ..., Bp, r, w
     
@@ -360,10 +356,10 @@ ests = function(maxlikes,input.hess,migration="none", n, X, Z, T=length(n.it[1,]
         f.trend.i = matrix(0,nrow=R,ncol=(betas+2))
         
         for(i in 1:R){
-          f.Nt.i[i,1]=lambda[i]*w^(t-1)
+          f.Nt.i[i,1] = lambda[i]*w^(t-1)
           if(betas>1) f.Nt.i[i,2] = X[i,2]* lambda[i]*w^(t-1)
           if(betas>2) f.Nt.i[i,3] = X[i,3]* lambda[i]*w^(t-1)
-          k.b=4
+          k.b = 4
           while(k.b<=betas) {
             f.Nt.i[i,k.b] = X[i,k.b]*lambda[i]*w^(t-1)
             k.b = k.b+1
@@ -373,10 +369,10 @@ ests = function(maxlikes,input.hess,migration="none", n, X, Z, T=length(n.it[1,]
           f.Nt.i[i,betas+2] = (lambda[i]*(w^(t-1)*(t-1))*(w-w^2)/w + 
                                  r*w^(t-1)*(t-1)*(w-w^2)/(w*(w-1)) - r*(w^(t-1)-1)*(w-w^2)/(w-1)^2 )
           
-          f.St.i[i,1]=lambda[i]*(1-w^t)/(1-w)
+          f.St.i[i,1] = lambda[i]*(1-w^t)/(1-w)
           if(betas>1) f.St.i[i,2] = X[i,2]*lambda[i]*(1-w^t)/(1-w)
           if(betas>2) f.St.i[i,3] = X[i,3]*lambda[i]*(1-w^t)/(1-w)
-          k.b=4
+          k.b = 4
           while(k.b<=betas) {
             f.St.i[i,k.b] = X[i,k.b]*lambda[i]*(1-w^t)/(1-w)
             k.b = k.b+1
@@ -390,12 +386,11 @@ ests = function(maxlikes,input.hess,migration="none", n, X, Z, T=length(n.it[1,]
           f.trend.i[i,1] = -r/(lambda[i]) 
           if(betas>1) f.trend.i[i,2] = -r*X[i,2]/(lambda[i])
           if(betas>2) f.trend.i[i,3] = -r*X[i,3]/(lambda[i])
-          k.b=4
+          k.b = 4
           while(k.b<=betas) {
             f.trend.i[i,k.b] = -r*X[i,k.b]/(lambda[i])
             k.b = k.b+1
           }
-          
           
           f.trend.i[i,betas+1] = r/(lambda[i])
           f.trend.i[i,betas+2] = w-w^2
@@ -416,12 +411,11 @@ ests = function(maxlikes,input.hess,migration="none", n, X, Z, T=length(n.it[1,]
         for(i in 1:R){
           var.trend.i[i] = t(f.trend.i[i,])%*%inv.hess%*%(f.trend.i[i,])
         }
-        trend=sum(((trend.i-rep(1,R))^2)/var.trend.i)
+        trend = sum(((trend.i-rep(1,R))^2)/var.trend.i)
         
-        trend.i.se=sqrt(abs(var.trend.i))
+        trend.i.se = sqrt(abs(var.trend.i))
         
       } #end of migration="constant"
-      
       
       if( migration=="autoreg") {
         Nt.i = lambda*(w+r)^(t-1)
@@ -434,10 +428,10 @@ ests = function(maxlikes,input.hess,migration="none", n, X, Z, T=length(n.it[1,]
         f.Nt.i = matrix(0,nrow=R,ncol=(betas+2))
         f.St.i = matrix(0,nrow=R,ncol=(betas+2))
         for(i in 1:R){
-          f.Nt.i[i,1]=lambda[i]*(w+r)^(t-1)
+          f.Nt.i[i,1] = lambda[i]*(w+r)^(t-1)
           if(betas>1) f.Nt.i[i,2] = X[i,2]* lambda[i]*(w+r)^(t-1)
           if(betas>2) f.Nt.i[i,3] = X[i,3]* lambda[i]*(w+r)^(t-1)
-          k.b=4
+          k.b = 4
           while(k.b<=betas) {
             f.Nt.i[i,k.b] = X[i,k.b]* lambda[i]*(w+r)^(t-1)
             k.b = k.b+1
@@ -446,16 +440,16 @@ ests = function(maxlikes,input.hess,migration="none", n, X, Z, T=length(n.it[1,]
           f.Nt.i[i,betas+1] = lambda[i]*(w+r)^(t-1)*(t-1)*r/(w+r)
           f.Nt.i[i,betas+2] = lambda[i]*(w+r)^(t-1)*(t-1)*(w-w^2)/(w+r)
           
-          f.St.i[i,1]=lambda[i]*(((w+r)^t )-1)/(w+r-1)
+          f.St.i[i,1] = lambda[i]*(((w+r)^t )-1)/(w+r-1)
           if(betas>1) f.St.i[i,2] = X[i,2]*lambda[i]*(((w+r)^t )-1)/(w+r-1)
           if(betas>2) f.St.i[i,3] = X[i,3]*lambda[i]*(((w+r)^t )-1)/(w+r-1)
-          k.b=4
+          k.b = 4
           while(k.b<=betas) {
             f.St.i[i,k.b] = X[i,k.b]* lambda[i]*(((w+r)^t )-1)/(w+r-1)
             k.b = k.b+1
           }
           
-          f.St.i[i,betas+1] =( lambda[i]*(w+r)^t*t*r/(w+r)/
+          f.St.i[i,betas+1] = ( lambda[i]*(w+r)^t*t*r/(w+r)/
                                  ( w+r-1) - (lambda[i]*(w+r)^t - lambda[i])*r/(w+r-1)^2)
           
           f.St.i[i,betas+2] = (lambda[i]*(w+r)^t*t*(w-w^2)/(w+r)/(w+r-1) - 
@@ -464,7 +458,6 @@ ests = function(maxlikes,input.hess,migration="none", n, X, Z, T=length(n.it[1,]
         f.Nt = colSums(f.Nt.i)
         f.St = colSums(f.St.i)
         
-        
         var.Nt = t(f.Nt) %*% inv.hess %*% (f.Nt)
         se.Nt = sqrt(abs(var.Nt))
         var.St = t(f.St) %*% inv.hess %*% (f.St)
@@ -472,7 +465,7 @@ ests = function(maxlikes,input.hess,migration="none", n, X, Z, T=length(n.it[1,]
         se.Nave = sqrt(abs(var.Nave))
         f.trend = c(rep(0,betas), r, (w-w^2))
         
-        var.trend=t(f.trend)%*%inv.hess%*%(f.trend)
+        var.trend = t(f.trend)%*%inv.hess%*%(f.trend)
         se.trend = sqrt(abs(var.trend))
       } #end of migration="autoreg"
       
